@@ -16,7 +16,8 @@ class Nav2dEnv(gym.Env):
         self.action_space = spaces.Tuple((spaces.Box(low=0, high=359, shape=(1,)),
                                          spaces.Box(low=0, high=10, shape=(1,), dtype=np.float32)))
         # how near should agent come to goal?
-        self.eps = 10
+        self.eps = 0.1
+        self.np_random = None
         # observation: distance to goal
         self.len_court_x = 255
         self.len_court_y = 255
@@ -25,18 +26,22 @@ class Nav2dEnv(gym.Env):
         self.observation_space = spaces.Box(low=self.low_state, high=self.high_state, shape=(1,))
 
         # agent stuff
-        self.agent_x = 0    # make this random later
-        self.agent_y = 0    # make this random later
+        self.agent_x = 0
+        self.agent_y = 0
 
         # goal stuff
-        self.goal_x = 50    # make this random later
-        self.goal_y = 50    # make this random later
+        self.goal_x = 0
+        self.goal_y = 0
 
+        self.seed()
         self.reset()
 
     def _reward(self):
         # 100 - distance
         return 100 - abs(math.sqrt(pow((self.goal_x-self.agent_x), 2) + pow((self.goal_y-self.agent_y), 2)))
+
+    def _observation(self):
+        return abs(math.sqrt(pow((self.goal_x - self.agent_x), 2) + pow((self.goal_y - self.agent_y), 2)))
 
     def step(self, action):
         angle = action[0][0]
@@ -67,8 +72,7 @@ class Nav2dEnv(gym.Env):
             self.agent_y = self.len_court_y
 
         # calulate new observation
-        obs = abs(math.sqrt(pow((self.goal_x-self.agent_x), 2) +
-                            pow((self.goal_y-self.agent_y), 2)))
+        obs = self._observation()
 
         rew = self._reward()
         done = bool(obs <= self.eps)
@@ -77,7 +81,13 @@ class Nav2dEnv(gym.Env):
 
     def reset(self):
         # set initial state randomly
-        print("reset")
+        self.agent_x = self.np_random.uniform(low=0, high=self.len_court_x)
+        self.agent_y = self.np_random.uniform(low=0, high=self.len_court_y)
+        self.goal_x = self.np_random.uniform(low=0, high=self.len_court_x)
+        self.goal_y = self.np_random.uniform(low=0, high=self.len_court_x)
+        if self.goal_y == self.agent_y or self.goal_x == self.agent_x:
+            self.reset()
+        return self._observation()
 
     def render(self, mode='human'):
         # print("render human")
@@ -85,3 +95,8 @@ class Nav2dEnv(gym.Env):
 
     def close(self):
         print("close")
+
+    def seed(self, seed=None):
+        self.np_random, seed = seeding.np_random(seed)
+        return seed
+
