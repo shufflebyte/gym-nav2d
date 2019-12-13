@@ -1,0 +1,3 @@
+# just ignore project directories
+.idea/
+./vscode/
