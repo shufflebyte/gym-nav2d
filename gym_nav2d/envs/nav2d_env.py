@@ -3,10 +3,7 @@ from gym import error, spaces, utils
 from gym.utils import seeding
 from gym.envs.classic_control import rendering
 import numpy as np
-import random
 import math
-
-random.seed(1337)
 
 
 class Nav2dEnv(gym.Env):
@@ -15,52 +12,70 @@ class Nav2dEnv(gym.Env):
                 'video.frames_per_second': 30}
 
     def __init__(self):
-        # action space: change direction in degree (discrete), run into this direction (Box)
-        self.action_space = spaces.Tuple((spaces.Box(low=0, high=359, shape=(1,)),
-                                          spaces.Box(low=0, high=10, shape=(1,), dtype=np.float32)))
-        # how near should agent come to goal?
-        self.eps = 0.1
-        self.np_random = None
-        self.viewer = None
-        self.cartrans = None
-        self.track_way = None
-        # observation: distance to goal
-        self.len_court_x = 255
-        self.len_court_y = 255
-        self.low_state = 0.
+        self.debug = False
+        # define the environment and the observations
+        self.len_court_x = 255              # the size of the environment
+        self.len_court_y = 255              # the size of the environment
+        self.obs_low_state = 0.             # define Box of observation
         self.high_state = math.sqrt(self.len_court_y * self.len_court_y + self.len_court_x * self.len_court_x)
-        self.observation_space = spaces.Box(low=self.low_state, high=self.high_state, shape=(1,))
+        self.observation_space = spaces.Box(low=self.obs_low_state, high=self.high_state, shape=(1,))
 
-        # agent stuff
+        # action space: change direction in degree (discrete), run into this direction (Box)
+        self.action_angle_low = 0
+        self.action_angle_high = 359
+        self.action_step_low = 0
+        self.action_step_high = 10
+        self.action_space = spaces.Tuple((spaces.Box(low=self.action_angle_high, high=self.action_angle_low, shape=(1,)),
+                                          spaces.Box(low=self.action_step_high, high=self.action_step_high, shape=(1,))))
+
+        self.count_actions = 0  # count actions for rewarding
+        self.eps = 25  # distance to goal, that has to be reached to solve env
+        self.np_random = None  # random generator
+
+        # agent
         self.agent_x = 0
         self.agent_y = 0
-        # track agent positions for drawing
-        self.positions = []
+        self.positions = []                 # track agent positions for drawing
 
-        # goal stuff
+        # the goal
         self.goal_x = 0
         self.goal_y = 0
 
         # rendering
         self.screen_height = 600
         self.screen_width = 600
+        self.viewer = None                  # viewer for render()
+        self.agent_trans = None             # Transform-object of the moving agent
+        self.track_way = None               # polyline object to draw the tracked way
+        self.scale = self.screen_width/self.len_court_x
 
+        # set a seed and reset the environment
         self.seed()
         self.reset()
 
-    def _reward(self):
-        # 100 - distance
-        return 100 - abs(math.sqrt(pow((self.goal_x - self.agent_x), 2) + pow((self.goal_y - self.agent_y), 2)))
+    def _distance(self):
+        return math.sqrt(pow((self.goal_x - self.agent_x), 2) + pow(self.goal_y - self.agent_y, 2))
+
+    # todo: think about a good reward fct that lets the agents learn to go to the goal by
+    #  extra rewarding reaching the goal and learning to do this by few steps as possible
+    def _reward_goal_reached(self):
+        # 1000 - (distance)/10 - (sum of actions)
+        return 1000
+
+    def _step_reward(self):
+        return - self._distance()/10 - self.count_actions
 
     def _observation(self):
-        return abs(math.sqrt(pow((self.goal_x - self.agent_x), 2) + pow((self.goal_y - self.agent_y), 2)))
+        # distance to the goal
+        return self._distance()
 
     def step(self, action):
+        self.count_actions += 1
         angle = action[0][0]
         angle_rad = angle / 360 * 2 * math.pi
         step_size = action[1][0]
         # calculate new agent state
-        if 0 < angle <= 90:
+        if 0 <= angle <= 90:
             self.agent_x = self.agent_x - math.cos(angle_rad) * step_size
             self.agent_y = self.agent_y + math.sin(angle_rad) * step_size
         elif 90 < angle <= 180:
@@ -86,9 +101,18 @@ class Nav2dEnv(gym.Env):
         # calulate new observation
         obs = self._observation()
 
-        rew = self._reward()
-        done = bool(obs <= self.eps or len(self.positions)>100)
-        info = "Debug:" + "act:" + str(action[0][0]) + "," + str(action[1][0]) + ", obs:" + str(obs) + ", rew:" + str(
+        # done for rewarding
+        done = bool(obs <= self.eps)
+        rew = 0
+        if not done:
+            rew += self._step_reward()
+        else:
+            rew += self._reward_goal_reached()
+
+        # done break if more than 100 actions taken
+        done = bool(obs <= self.eps or self.count_actions >= 100)
+
+        info = "Debug:" + "actions performed:" + str(self.count_actions) + ", act:" + str(action[0][0]) + "," + str(action[1][0]) + ", obs:" + str(obs) + ", rew:" + str(
             rew) + ", agent pos: (" + str(self.agent_x) + "," + str(self.agent_y) + ")", "goal pos: (" + str(
             self.goal_x) + "," + str(self.goal_y) + "), done: " + str(done)
 
@@ -98,6 +122,8 @@ class Nav2dEnv(gym.Env):
         return obs, rew, done, info
 
     def reset(self):
+        self.count_actions = 0
+        self.positions = []
         # set initial state randomly
         self.agent_x = self.np_random.uniform(low=0, high=self.len_court_x)
         self.agent_y = self.np_random.uniform(low=0, high=self.len_court_y)
@@ -105,34 +131,37 @@ class Nav2dEnv(gym.Env):
         self.goal_y = self.np_random.uniform(low=0, high=self.len_court_x)
         if self.goal_y == self.agent_y or self.goal_x == self.agent_x:
             self.reset()
+        self.positions.append([self.agent_x, self.agent_y])
+        if self.debug:
+            print("x/y  - x/y", self.agent_x, self.agent_y, self.goal_x, self.goal_y)
+            print("scale x/y  - x/y", self.agent_x*self.scale, self.agent_y*self.scale, self.goal_x*self.scale, self.goal_y*self.scale)
         return self._observation()
 
     def render(self, mode='human'):
         if mode == 'ansi':
             return self._observation()
         elif mode == 'human':
-            scale = self.screen_width / self.len_court_x
             if self.viewer is None:
                 self.viewer = rendering.Viewer(self.screen_width, self.screen_height)
 
             #track the way, the agent has gone
-            self.track_way = rendering.make_polyline(np.dot(self.positions, scale))
+            self.track_way = rendering.make_polyline(np.dot(self.positions, self.scale))
             self.track_way.set_linewidth(4)
             self.viewer.add_geom(self.track_way)
 
             # draw the agent
             car = rendering.make_circle(5)
-            self.cartrans = rendering.Transform()
-            car.add_attr(self.cartrans)
+            self.agent_trans = rendering.Transform()
+            car.add_attr(self.agent_trans)
             car.set_color(0, 0, 255)
             self.viewer.add_geom(car)
 
             goal = rendering.make_circle(5)
-            goal.add_attr(rendering.Transform(translation=(self.goal_x, self.goal_y)))
+            goal.add_attr(rendering.Transform(translation=(self.goal_x*self.scale, self.goal_y*self.scale)))
             goal.set_color(255, 0, 0)
             self.viewer.add_geom(goal)
 
-            self.cartrans.set_translation(self.agent_x*scale, self.agent_y*scale)
+            self.agent_trans.set_translation(self.agent_x * self.scale, self.agent_y * self.scale)
 
             return self.viewer.render(return_rgb_array=mode == 'rgb_array')
         elif mode == "rgb_array":
