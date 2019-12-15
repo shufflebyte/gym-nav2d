@@ -17,19 +17,23 @@ class Nav2dEnv(gym.Env):
         self.len_court_x = 255              # the size of the environment
         self.len_court_y = 255              # the size of the environment
         self.obs_low_state = 0.             # define Box of observation
-        self.high_state = math.sqrt(self.len_court_y * self.len_court_y + self.len_court_x * self.len_court_x)
+        self.high_state = math.sqrt(math.sqrt(pow(self.len_court_x, 2) + pow(self.len_court_y, 2)))
         self.observation_space = spaces.Box(low=self.obs_low_state, high=self.high_state, shape=(1,))
 
-        # action space: change direction in degree (discrete), run into this direction (Box)
-        self.action_angle_low = 0
-        self.action_angle_high = 359
-        self.action_step_low = 0
-        self.action_step_high = 10
-        self.action_space = spaces.Tuple((spaces.Box(low=self.action_angle_high, high=self.action_angle_low, shape=(1,)),
-                                          spaces.Box(low=self.action_step_high, high=self.action_step_high, shape=(1,))))
+        self.max_steps = 200
+        self.max_step_size = 10
+        # action space: change direction in rad (discrete), run into this direction (Box)
+        self.action_angle_low = -1
+        self.action_angle_high = 1
+        self.action_step_low = -1
+        self.action_step_high = 1
+        self.action_space = spaces.Box(np.array([self.action_angle_low, self.action_step_low]),
+                                       np.array([self.action_angle_high, self.action_step_high]), dtype=np.float32)
+        # self.action_space = spaces.Tuple((spaces.Box(low=self.action_angle_high, high=self.action_angle_low, shape=(1,)),
+        #                                   spaces.Box(low=self.action_step_high, high=self.action_step_high, shape=(1,))))
 
         self.count_actions = 0  # count actions for rewarding
-        self.eps = 25  # distance to goal, that has to be reached to solve env
+        self.eps = 5  # distance to goal, that has to be reached to solve env
         self.np_random = None  # random generator
 
         # agent
@@ -63,7 +67,7 @@ class Nav2dEnv(gym.Env):
         return 1000
 
     def _step_reward(self):
-        return - self._distance()/10 - self.count_actions
+        return - self._distance()/10 - 1
 
     def _observation(self):
         # distance to the goal
@@ -71,22 +75,22 @@ class Nav2dEnv(gym.Env):
 
     def step(self, action):
         self.count_actions += 1
-        angle = action[0][0]
-        angle_rad = angle / 360 * 2 * math.pi
-        step_size = action[1][0]
+        angle = (action[0] + 1) * math.pi
+        # angle_rad = angle / 360 * 2 * math.pi
+        step_size = (action[1] + 1) * self.max_step_size / 2
         # calculate new agent state
-        if 0 <= angle <= 90:
-            self.agent_x = self.agent_x - math.cos(angle_rad) * step_size
-            self.agent_y = self.agent_y + math.sin(angle_rad) * step_size
-        elif 90 < angle <= 180:
-            self.agent_x = self.agent_x + math.cos(angle_rad) * step_size
-            self.agent_y = self.agent_y - math.sin(angle_rad) * step_size
-        elif 180 < angle <= 270:
-            self.agent_x = self.agent_x - math.cos(angle_rad) * step_size
-            self.agent_y = self.agent_y + math.sin(angle_rad) * step_size
-        elif 270 < angle <= 360:
-            self.agent_x = self.agent_x + math.cos(angle_rad) * step_size
-            self.agent_y = self.agent_y - math.sin(angle_rad) * step_size
+        if 0 <= angle <= math.pi/2:
+            self.agent_x = self.agent_x - math.cos(angle) * step_size
+            self.agent_y = self.agent_y + math.sin(angle) * step_size
+        elif math.pi/2 < angle <= math.pi:
+            self.agent_x = self.agent_x + math.cos(angle) * step_size
+            self.agent_y = self.agent_y - math.sin(angle) * step_size
+        elif math.pi < angle <= math.pi*1.5:
+            self.agent_x = self.agent_x - math.cos(angle) * step_size
+            self.agent_y = self.agent_y + math.sin(angle) * step_size
+        elif math.pi*1.5 < angle <= math.pi*2:
+            self.agent_x = self.agent_x + math.cos(angle) * step_size
+            self.agent_y = self.agent_y - math.sin(angle) * step_size
 
         # borders
         if self.agent_x < 0:
@@ -109,33 +113,37 @@ class Nav2dEnv(gym.Env):
         else:
             rew += self._reward_goal_reached()
 
-        # done break if more than 100 actions taken
-        done = bool(obs <= self.eps or self.count_actions >= 100)
+        # done break if more than max_steps actions taken
+        done = bool(obs <= self.eps or self.count_actions >= self.max_steps)
 
-        info = "Debug:" + "actions performed:" + str(self.count_actions) + ", act:" + str(action[0][0]) + "," + str(action[1][0]) + ", obs:" + str(obs) + ", rew:" + str(
+        info = "Debug:" + "actions performed:" + str(self.count_actions) + ", act:" + str(action[0]) + "," + str(action[1]) + ", obs:" + str(obs) + ", rew:" + str(
             rew) + ", agent pos: (" + str(self.agent_x) + "," + str(self.agent_y) + ")", "goal pos: (" + str(
             self.goal_x) + "," + str(self.goal_y) + "), done: " + str(done)
 
         #track, where agent was
         self.positions.append((self.agent_x, self.agent_y))
 
-        return obs, rew, done, info
+        return np.array([obs]), rew, done, info
 
     def reset(self):
         self.count_actions = 0
         self.positions = []
         # set initial state randomly
-        self.agent_x = self.np_random.uniform(low=0, high=self.len_court_x)
-        self.agent_y = self.np_random.uniform(low=0, high=self.len_court_y)
-        self.goal_x = self.np_random.uniform(low=0, high=self.len_court_x)
-        self.goal_y = self.np_random.uniform(low=0, high=self.len_court_x)
+        # self.agent_x = self.np_random.uniform(low=0, high=self.len_court_x)
+        # self.agent_y = self.np_random.uniform(low=0, high=self.len_court_y)
+        self.agent_x = 10
+        self.agent_y = 240
+        # self.goal_x = self.np_random.uniform(low=0, high=self.len_court_x)
+        # self.goal_y = self.np_random.uniform(low=0, high=self.len_court_x)
+        self.goal_x = 125
+        self.goal_y = 125
         if self.goal_y == self.agent_y or self.goal_x == self.agent_x:
             self.reset()
         self.positions.append([self.agent_x, self.agent_y])
         if self.debug:
             print("x/y  - x/y", self.agent_x, self.agent_y, self.goal_x, self.goal_y)
             print("scale x/y  - x/y", self.agent_x*self.scale, self.agent_y*self.scale, self.goal_x*self.scale, self.goal_y*self.scale)
-        return self._observation()
+        return np.array([self._observation()])
 
     def render(self, mode='human'):
         if mode == 'ansi':
