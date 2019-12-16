@@ -121,7 +121,7 @@ class Nav2dEnv(gym.Env):
             self.goal_x) + "," + str(self.goal_y) + "), done: " + str(done)
 
         #track, where agent was
-        self.positions.append((self.agent_x, self.agent_y))
+        self.positions.append([self.agent_x, self.agent_y])
 
         return obs, rew, done, info
 
