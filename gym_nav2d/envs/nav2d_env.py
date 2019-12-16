@@ -72,23 +72,25 @@ class Nav2dEnv(gym.Env):
     def _observation(self):
         return np.array([self.agent_x, self.agent_y, self.goal_x, self.goal_y, self._distance()])
 
-    def step(self, action):
-        self.count_actions += 1
-        angle = (action[0] + 1) * math.pi
+    def _calculate_position(self, action):
+        angle = (action[0] + 1) * math.pi + math.pi / 2
+        if angle > 2 * math.pi:
+            angle -= 2 * math.pi
         step_size = (action[1] + 1) / 2 * self.max_step_size
         # calculate new agent state
-        if 0 <= angle <= math.pi/2:
-            self.agent_x = self.agent_x - math.cos(angle) * step_size
-            self.agent_y = self.agent_y + math.sin(angle) * step_size
-        elif math.pi/2 < angle <= math.pi:
+        # angle = abs(angle)
+        if 0 <= angle <= math.pi / 2:
             self.agent_x = self.agent_x + math.cos(angle) * step_size
-            self.agent_y = self.agent_y - math.sin(angle) * step_size
-        elif math.pi < angle <= math.pi*1.5:
-            self.agent_x = self.agent_x - math.cos(angle) * step_size
             self.agent_y = self.agent_y + math.sin(angle) * step_size
-        elif math.pi*1.5 < angle <= math.pi*2:
+        elif math.pi / 2 < angle <= math.pi:
             self.agent_x = self.agent_x + math.cos(angle) * step_size
-            self.agent_y = self.agent_y - math.sin(angle) * step_size
+            self.agent_y = self.agent_y + math.sin(angle) * step_size
+        elif math.pi < angle <= math.pi * 1.5:
+            self.agent_x = self.agent_x + math.cos(angle) * step_size
+            self.agent_y = self.agent_y + math.sin(angle) * step_size
+        elif math.pi * 1.5 < angle <= math.pi * 2:
+            self.agent_x = self.agent_x + math.cos(angle) * step_size
+            self.agent_y = self.agent_y + math.sin(angle) * step_size
 
         # borders
         if self.agent_x < 0:
@@ -100,6 +102,9 @@ class Nav2dEnv(gym.Env):
         if self.agent_y > self.len_court_y:
             self.agent_y = self.len_court_y
 
+    def step(self, action):
+        self.count_actions += 1
+        self._calculate_position(action)
         # calulate new observation
         obs = self._observation()
 

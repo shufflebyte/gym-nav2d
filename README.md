@@ -97,7 +97,3 @@ Two sample agents are implemented. RandomAgents shows a completely untrained age
 RandomAgent             | OrcaleAgent 
 :-------------------------:|:-------------------------:
 ![random_agent](README.assets/random_agent.png)|  ![oracle_agent](README.assets/oracle_agent.png)
-
-## Open bugs
-
-Something seems to be odd with the OracleAgent (does have problems with atan2(x,y) when x or y near 0). Unsure if it will be fixed in future, since it has no influence to the gym env.

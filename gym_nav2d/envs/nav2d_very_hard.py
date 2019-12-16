@@ -38,31 +38,7 @@ class Nav2dVeryHardEnv(Nav2dEnv):
 
     def step(self, action):
         self.count_actions += 1
-        angle = (action[0] + 1) * math.pi
-        step_size = (action[1] + 1) / 2 * self.max_step_size
-        # calculate new agent state
-        if 0 <= angle <= math.pi / 2:
-            self.agent_x = self.agent_x - math.cos(angle) * step_size
-            self.agent_y = self.agent_y + math.sin(angle) * step_size
-        elif math.pi / 2 < angle <= math.pi:
-            self.agent_x = self.agent_x + math.cos(angle) * step_size
-            self.agent_y = self.agent_y - math.sin(angle) * step_size
-        elif math.pi < angle <= math.pi * 1.5:
-            self.agent_x = self.agent_x - math.cos(angle) * step_size
-            self.agent_y = self.agent_y + math.sin(angle) * step_size
-        elif math.pi * 1.5 < angle <= math.pi * 2:
-            self.agent_x = self.agent_x + math.cos(angle) * step_size
-            self.agent_y = self.agent_y - math.sin(angle) * step_size
-
-        # borders
-        if self.agent_x < 0:
-            self.agent_x = 0
-        if self.agent_x > self.len_court_x:
-            self.agent_x = self.len_court_x
-        if self.agent_y < 0:
-            self.agent_y = 0
-        if self.agent_y > self.len_court_y:
-            self.agent_y = self.len_court_y
+        self._calculate_position(action)
 
         # calulate new observation
         obs = self._observation()
