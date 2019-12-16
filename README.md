@@ -45,8 +45,8 @@ Type: Box(2)
 
 | Num  | Action    | Min  | Max  |
 | ---- | --------- | ---- | ---- |
-| 0    | degree    | 0    | 2pi  |
-| 1    | step_size | 0    | 10   |
+| 0    | degree    | -1    | 1  |
+| 1    | step_size | -1    | 1   |
 
 **Hint**: We expect floats between -1 and 1 (e.g. output of tanh), in form of [float, float] and convert those to an angle in rad and a steps size between 0 and 10.
 
