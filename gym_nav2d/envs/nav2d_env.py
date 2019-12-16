@@ -1,7 +1,6 @@
 import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
-from gym.envs.classic_control import rendering
 import numpy as np
 import math
 
@@ -152,6 +151,7 @@ class Nav2dEnv(gym.Env):
         if mode == 'ansi':
             return self._observation()
         elif mode == 'human':
+            from gym.envs.classic_control import rendering
             if self.viewer is None:
                 self.viewer = rendering.Viewer(self.screen_width, self.screen_height)
 
