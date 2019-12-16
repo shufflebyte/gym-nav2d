@@ -93,7 +93,10 @@ In the Easy, Hard and VeryHard env, a very good agents needs max $$ceil(\sqrt{(2
 
 Two sample agents are implemented. RandomAgents shows a completely untrained agent and OracleAgent mimics an agent, that has learned a strong policy.
 
-<img src="README.assets/random_agent.png" alt="random_agent" style="zoom:30%;" /><img src="README.assets/oracle_agent.png" alt="oracle_agent" style="zoom:30%;" />
+
+RandomAgent             | OrcaleAgent 
+:-------------------------:|:-------------------------:
+![random_agent](README.assets/random_agent.png)|  ![oracle_agent](README.assets/oracle_agent.png)
 
 ## Open bugs
 
