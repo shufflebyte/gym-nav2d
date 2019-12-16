@@ -89,6 +89,12 @@ The Hard env is a lot harder, since the goal will be variable too and will take 
 
 In the Easy, Hard and VeryHard env, a very good agents needs max $$ceil(\sqrt{(255-0)^2+(255-0)^2}:10) = 37 $$ steps in the worst case. Since they distinct in start, goal positions and observations, you can assume more steps also as solved, especially Hard and VeryHard.
 
+## Agents
+
+Two sample agents are implemented. RandomAgents shows a completely untrained agent and OracleAgent mimics an agent, that has learned a strong policy.
+
+<img src="README.assets/random_agent.png" alt="random_agent" style="zoom:30%;" /><img src="README.assets/oracle_agent.png" alt="oracle_agent" style="zoom:30%;" />
+
 ## Open bugs
 
 Something seems to be odd with the OracleAgent (does have problems with atan2(x,y) when x or y near 0). Unsure if it will be fixed in future, since it has no influence to the gym env.
