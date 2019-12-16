@@ -22,7 +22,7 @@ class Nav2dEnv(gym.Env):
                     np.array([self.len_court_x, self.len_court_y, self.len_court_x, self.len_court_y, self.high_state]),
                                             dtype=np.float32)
 
-        self.max_steps = 200
+        self.max_steps = 100
         self.max_step_size = 10
         # action space: change direction in rad (discrete), run into this direction (Box)
         self.action_angle_low = -1
@@ -31,8 +31,6 @@ class Nav2dEnv(gym.Env):
         self.action_step_high = 1
         self.action_space = spaces.Box(np.array([self.action_angle_low, self.action_step_low]),
                                        np.array([self.action_angle_high, self.action_step_high]), dtype=np.float32)
-        # self.action_space = spaces.Tuple((spaces.Box(low=self.action_angle_high, high=self.action_angle_low, shape=(1,)),
-        #                                   spaces.Box(low=self.action_step_high, high=self.action_step_high, shape=(1,))))
 
         self.count_actions = 0  # count actions for rewarding
         self.eps = 5  # distance to goal, that has to be reached to solve env
