@@ -8,7 +8,7 @@ import math
 
 class Nav2dEnv(gym.Env):
     # this is a list of supported rendering modes!
-    metadata = {'render.modes': ['human', 'ansi', 'rgb_array'],
+    metadata = {'render.modes': ['human', 'ansi'],
                 'video.frames_per_second': 30}
 
     def __init__(self):
@@ -18,7 +18,9 @@ class Nav2dEnv(gym.Env):
         self.len_court_y = 255              # the size of the environment
         self.obs_low_state = 0.             # define Box of observation
         self.high_state = math.sqrt(math.sqrt(pow(self.len_court_x, 2) + pow(self.len_court_y, 2)))
-        self.observation_space = spaces.Box(low=self.obs_low_state, high=self.high_state, shape=(1,))
+        self.observation_space = spaces.Box(np.array([0, 0, 0, 0, 0]),  # x_agent, y_agent, x_goal, y_goal, distance
+                    np.array([self.len_court_x, self.len_court_y, self.len_court_x, self.len_court_y, self.high_state]),
+                                            dtype=np.float32)
 
         self.max_steps = 200
         self.max_step_size = 10
@@ -70,14 +72,12 @@ class Nav2dEnv(gym.Env):
         return - self._distance()/10 - 1
 
     def _observation(self):
-        # distance to the goal
-        return self._distance()
+        return np.array([self.agent_x, self.agent_y, self.goal_x, self.goal_y, self._distance()])
 
     def step(self, action):
         self.count_actions += 1
         angle = (action[0] + 1) * math.pi
-        # angle_rad = angle / 360 * 2 * math.pi
-        step_size = (action[1] + 1) * self.max_step_size / 2
+        step_size = (action[1] + 1) / 2 * self.max_step_size
         # calculate new agent state
         if 0 <= angle <= math.pi/2:
             self.agent_x = self.agent_x - math.cos(angle) * step_size
@@ -106,24 +106,24 @@ class Nav2dEnv(gym.Env):
         obs = self._observation()
 
         # done for rewarding
-        done = bool(obs <= self.eps)
+        done = bool(obs[4] <= self.eps)
         rew = 0
         if not done:
             rew += self._step_reward()
         else:
             rew += self._reward_goal_reached()
 
-        # done break if more than max_steps actions taken
-        done = bool(obs <= self.eps or self.count_actions >= self.max_steps)
+        # break if more than max_steps actions taken
+        done = bool(obs[4] <= self.eps or self.count_actions >= self.max_steps)
 
-        info = "Debug:" + "actions performed:" + str(self.count_actions) + ", act:" + str(action[0]) + "," + str(action[1]) + ", obs:" + str(obs) + ", rew:" + str(
+        info = "Debug:" + "actions performed:" + str(self.count_actions) + ", act:" + str(action[0]) + "," + str(action[1]) + ", dist:" + str(obs[4]) + ", rew:" + str(
             rew) + ", agent pos: (" + str(self.agent_x) + "," + str(self.agent_y) + ")", "goal pos: (" + str(
             self.goal_x) + "," + str(self.goal_y) + "), done: " + str(done)
 
         #track, where agent was
         self.positions.append((self.agent_x, self.agent_y))
 
-        return np.array([obs]), rew, done, info
+        return obs, rew, done, info
 
     def reset(self):
         self.count_actions = 0
@@ -143,7 +143,7 @@ class Nav2dEnv(gym.Env):
         if self.debug:
             print("x/y  - x/y", self.agent_x, self.agent_y, self.goal_x, self.goal_y)
             print("scale x/y  - x/y", self.agent_x*self.scale, self.agent_y*self.scale, self.goal_x*self.scale, self.goal_y*self.scale)
-        return np.array([self._observation()])
+        return self._observation()
 
     def render(self, mode='human'):
         if mode == 'ansi':
