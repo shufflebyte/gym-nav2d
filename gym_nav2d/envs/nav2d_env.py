@@ -77,19 +77,8 @@ class Nav2dEnv(gym.Env):
             angle -= 2 * math.pi
         step_size = (action[1] + 1) / 2 * self.max_step_size
         # calculate new agent state
-        # angle = abs(angle)
-        if 0 <= angle <= math.pi / 2:
-            self.agent_x = self.agent_x + math.cos(angle) * step_size
-            self.agent_y = self.agent_y + math.sin(angle) * step_size
-        elif math.pi / 2 < angle <= math.pi:
-            self.agent_x = self.agent_x + math.cos(angle) * step_size
-            self.agent_y = self.agent_y + math.sin(angle) * step_size
-        elif math.pi < angle <= math.pi * 1.5:
-            self.agent_x = self.agent_x + math.cos(angle) * step_size
-            self.agent_y = self.agent_y + math.sin(angle) * step_size
-        elif math.pi * 1.5 < angle <= math.pi * 2:
-            self.agent_x = self.agent_x + math.cos(angle) * step_size
-            self.agent_y = self.agent_y + math.sin(angle) * step_size
+        self.agent_x = self.agent_x + math.cos(angle) * step_size
+        self.agent_y = self.agent_y + math.sin(angle) * step_size
 
         # borders
         if self.agent_x < 0:
