@@ -75,6 +75,7 @@ class Nav2dEnv(gym.Env):
         for i in range(0, 4):
             obs[i] = obs[i]/255*2-1
         obs[-1] = obs[-1]/360.62
+        return obs
 
     def _calculate_position(self, action):
         angle = (action[0] + 1) * math.pi + math.pi / 2
@@ -118,9 +119,7 @@ class Nav2dEnv(gym.Env):
 
         #track, where agent was
         self.positions.append([self.agent_x, self.agent_y])
-
         normalized_obs = self._normalize_observation(obs)
-
         return normalized_obs, rew, done, info
 
     def reset(self):

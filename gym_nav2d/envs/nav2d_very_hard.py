@@ -37,7 +37,8 @@ class Nav2dVeryHardEnv(Nav2dEnv):
             print("x/y  - x/y", self.agent_x, self.agent_y, self.goal_x, self.goal_y)
             print("scale x/y  - x/y", self.agent_x*self.scale, self.agent_y*self.scale, self.goal_x*self.scale,
                   self.goal_y*self.scale)
-        return self._observation()
+        obs = self._observation()
+        return self._normalize_observation(obs)
 
     def step(self, action):
         self.count_actions += 1
@@ -64,4 +65,4 @@ class Nav2dVeryHardEnv(Nav2dEnv):
 
         # track, where agent was
         self.positions.append([self.agent_x, self.agent_y])
-        return obs, rew, done, info
+        return self._normalize_observation(obs), rew, done, info

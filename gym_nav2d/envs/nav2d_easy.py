@@ -31,4 +31,6 @@ class Nav2dEasyEnv(Nav2dEnv):
             print("x/y  - x/y", self.agent_x, self.agent_y, self.goal_x, self.goal_y)
             print("scale x/y  - x/y", self.agent_x*self.scale, self.agent_y*self.scale, self.goal_x*self.scale,
                   self.goal_y*self.scale)
-        return self._observation()
+        obs = self._observation()
+
+        return self._normalize_observation(obs)
