@@ -69,7 +69,7 @@ class Nav2dEnv(gym.Env):
         return - self._distance()/10 - 1
 
     def _observation(self):
-        return np.array([self.agent_x, self.agent_y, self.goal_x, self.goal_y, self._distance()])
+        return np.array([(self.agent_x/255)*2-1, self.agent_y/255*2-1, self.goal_x/255*2-1, self.goal_y/255*2-1, self._distance()/360.62])
 
     def _calculate_position(self, action):
         angle = (action[0] + 1) * math.pi + math.pi / 2
