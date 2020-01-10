@@ -17,7 +17,10 @@ class Nav2dVeryHardEnv(Nav2dEnv):
 
     def _observation(self):
         # distance to the goal
-        return np.array([self._distance()/360.62])
+        return np.array([self._distance()])
+
+    def _normalize_observation(self, obs):
+        return obs/360.62
 
     def reset(self):
         # Changing start point and fixed goal point

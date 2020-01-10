@@ -69,7 +69,12 @@ class Nav2dEnv(gym.Env):
         return - self._distance()/10 - 1
 
     def _observation(self):
-        return np.array([(self.agent_x/255)*2-1, self.agent_y/255*2-1, self.goal_x/255*2-1, self.goal_y/255*2-1, self._distance()/360.62])
+        return np.array([self.agent_x, self.agent_y, self.goal_x, self.goal_y, self._distance()])
+
+    def _normalize_observation(self, obs):
+        for i in range(0, 4):
+            obs[i] = obs[i]/255*2-1
+        obs[-1] = obs[-1]/360.62
 
     def _calculate_position(self, action):
         angle = (action[0] + 1) * math.pi + math.pi / 2
@@ -114,7 +119,9 @@ class Nav2dEnv(gym.Env):
         #track, where agent was
         self.positions.append([self.agent_x, self.agent_y])
 
-        return obs, rew, done, info
+        normalized_obs = self._normalize_observation(obs)
+
+        return normalized_obs, rew, done, info
 
     def reset(self):
         self.count_actions = 0
@@ -134,7 +141,9 @@ class Nav2dEnv(gym.Env):
         if self.debug:
             print("x/y  - x/y", self.agent_x, self.agent_y, self.goal_x, self.goal_y)
             print("scale x/y  - x/y", self.agent_x*self.scale, self.agent_y*self.scale, self.goal_x*self.scale, self.goal_y*self.scale)
-        return self._observation()
+
+        obs = self._observation()
+        return self._normalize_observation(obs)
 
     def render(self, mode='human'):
         if mode == 'ansi':
