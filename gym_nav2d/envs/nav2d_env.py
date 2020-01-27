@@ -75,7 +75,7 @@ class Nav2dEnv(gym.Env):
         for i in range(0, 4):
             normalized_obs.append(obs[i]/255*2-1)
         normalized_obs.append(obs[-1]/360.62)
-        return normalized_obs
+        return np.array(normalized_obs)
 
     def _calculate_position(self, action):
         angle = (action[0] + 1) * math.pi + math.pi / 2
