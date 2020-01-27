@@ -11,9 +11,8 @@ class Nav2dVeryHardEnv(Nav2dEnv):
 
     def __init__(self):
         Nav2dEnv.__init__(self)
-        self.high_state = math.sqrt(math.sqrt(pow(self.len_court_x, 2) + pow(self.len_court_y, 2)))
-        self.observation_space = spaces.Box(np.array([0]),
-                                            np.array([self.high_state]), dtype=np.float32)
+        # observation only distance 0..1
+        self.observation_space = spaces.Box(np.array([0]), np.array([1]), dtype=np.float32)
 
     def _observation(self):
         # distance to the goal
@@ -58,11 +57,13 @@ class Nav2dVeryHardEnv(Nav2dEnv):
         # break if more than max_steps actions taken
         done = bool(obs[0] <= self.eps or self.count_actions >= self.max_steps)
 
+        normalized_obs = self._normalize_observation(obs)
+
         info = "Debug:" + "actions performed:" + str(self.count_actions) + ", act:" + str(action[0]) + "," + str(
-            action[1]) + ", dist:" + str(obs[0]) + ", rew:" + str(
+            action[1]) + ", dist:" + str(normalized_obs[0]) + ", rew:" + str(
             rew) + ", agent pos: (" + str(self.agent_x) + "," + str(self.agent_y) + ")", "goal pos: (" + str(
             self.goal_x) + "," + str(self.goal_y) + "), done: " + str(done)
 
         # track, where agent was
         self.positions.append([self.agent_x, self.agent_y])
-        return self._normalize_observation(obs), rew, done, info
+        return normalized_obs, rew, done, info

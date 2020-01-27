@@ -15,11 +15,10 @@ class Nav2dEnv(gym.Env):
         # define the environment and the observations
         self.len_court_x = 255              # the size of the environment
         self.len_court_y = 255              # the size of the environment
-        self.obs_low_state = 0.             # define Box of observation
-        self.high_state = math.sqrt(math.sqrt(pow(self.len_court_x, 2) + pow(self.len_court_y, 2)))
-        self.observation_space = spaces.Box(np.array([0, 0, 0, 0, 0]),  # x_agent, y_agent, x_goal, y_goal, distance
-                    np.array([self.len_court_x, self.len_court_y, self.len_court_x, self.len_court_y, self.high_state]),
-                                            dtype=np.float32)
+
+        self.obs_low_state = np.array([-1, -1, -1, -1, 0]) # x_agent,y_agent, x_goal, y_goal, distance
+        self.obs_high_state = np.array([1, 1, 1, 1, 1])
+        self.observation_space = spaces.Box(self.obs_low_state, self.obs_high_state, dtype=np.float32)
 
         self.max_steps = 100
         self.max_step_size = 10
@@ -72,10 +71,11 @@ class Nav2dEnv(gym.Env):
         return np.array([self.agent_x, self.agent_y, self.goal_x, self.goal_y, self._distance()])
 
     def _normalize_observation(self, obs):
+        normalized_obs = []
         for i in range(0, 4):
-            obs[i] = obs[i]/255*2-1
-        obs[-1] = obs[-1]/360.62
-        return obs
+            normalized_obs.append(obs[i]/255*2-1)
+        normalized_obs.append(obs[-1]/360.62)
+        return normalized_obs
 
     def _calculate_position(self, action):
         angle = (action[0] + 1) * math.pi + math.pi / 2
@@ -113,13 +113,15 @@ class Nav2dEnv(gym.Env):
         # break if more than max_steps actions taken
         done = bool(obs[4] <= self.eps or self.count_actions >= self.max_steps)
 
-        info = "Debug:" + "actions performed:" + str(self.count_actions) + ", act:" + str(action[0]) + "," + str(action[1]) + ", dist:" + str(obs[4]) + ", rew:" + str(
+        # track, where agent was
+        self.positions.append([self.agent_x, self.agent_y])
+
+        normalized_obs = self._normalize_observation(obs)
+
+        info = "Debug:" + "actions performed:" + str(self.count_actions) + ", act:" + str(action[0]) + "," + str(action[1]) + ", dist:" + str(normalized_obs[4]) + ", rew:" + str(
             rew) + ", agent pos: (" + str(self.agent_x) + "," + str(self.agent_y) + ")", "goal pos: (" + str(
             self.goal_x) + "," + str(self.goal_y) + "), done: " + str(done)
 
-        #track, where agent was
-        self.positions.append([self.agent_x, self.agent_y])
-        normalized_obs = self._normalize_observation(obs)
         return normalized_obs, rew, done, info
 
     def reset(self):

@@ -12,10 +12,6 @@ class Nav2dVeryEasyEnv(Nav2dEnv):
 
     def __init__(self):
         Nav2dEnv.__init__(self)
-        self.high_state = math.sqrt(math.sqrt(pow(self.len_court_x, 2) + pow(self.len_court_y, 2)))
-        self.observation_space = spaces.Box(np.array([0, 0, 0, 0, 0]),
-                                            np.array([self.len_court_x, self.len_court_y, self.len_court_x,
-                                                      self.len_court_y, self.high_state]), dtype=np.float32)
 
     def reset(self):
         # Fixed start point and fixed goal point

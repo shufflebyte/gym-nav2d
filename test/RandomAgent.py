@@ -1,13 +1,13 @@
 import gym
 import time
 
-DEBUG = False
+DEBUG = True
 
 for e in range(100):
-    # env = gym.make('gym_nav2d:nav2dVeryEasy-v0')
+    env = gym.make('gym_nav2d:nav2dVeryEasy-v0')
     # env = gym.make('gym_nav2d:nav2dEasy-v0')
     # env = gym.make('gym_nav2d:nav2dHard-v0')
-    env = gym.make('gym_nav2d:nav2dVeryHard-v0')
+    # env = gym.make('gym_nav2d:nav2dVeryHard-v0')
     obs = env.reset()
     cumulated_reward = 0
     i = 0
